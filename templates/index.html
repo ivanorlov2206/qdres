@@ -1,0 +1,73 @@
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body>
+    <canvas id="canv" width="640" height="480" style="background-color: #000000;"></canvas><br>
+    <select name="Arch" id="arch">
+      <option value="baseline">Baseline</option>
+      <option value="from github">From github</option>
+      <option value="VGGNet">VGG Net</option>
+    </select>
+    <button id="send">Определить</button><button id="clear">Стереть</button><br><br>
+    <span style="font-size: 25dp" id="result"></span>
+
+    <p>Objects:<br>book<br>
+      sun<br>banana<br>apple<br>bowtie<br>ice cream<br>eye<br>square<br>cup<br>door<br>sword<br>star<br>fish<br>donut<br>mountain</p>
+    <script>
+        var canvas = document.getElementById("canv");
+        var context = canvas.getContext("2d");
+
+        var w = canvas.width;
+        var h = canvas.height;
+        context.fillStyle = "black";
+        context.fillRect(0, 0, w, h);
+
+        var mouse = {x: 0, y: 0};
+        var draw = false;
+
+        canvas.addEventListener("mousedown", function(e) {
+            mouse.x = e.pageX - this.offsetLeft;
+            mouse.y = e.pageY - this.offsetTop;
+            draw = true;
+        });
+        canvas.addEventListener("mousemove", function(e) {
+            if (draw == true) {
+                mouse.x = e.pageX - this.offsetLeft;
+                mouse.y = e.pageY - this.offsetTop;
+
+                context.fillStyle = "white";
+                context.beginPath();
+                context.ellipse(mouse.x, mouse.y, 6, 6, 0, 0, 2 * Math.PI);
+                context.fill();
+            }
+        });
+        canvas.addEventListener("mouseup", function(e) {
+            mouse.x = e.pageX - this.offsetLeft;
+            mouse.y = e.pageY - this.offsetTop;
+            draw = false;
+        });
+        var clear = document.getElementById("clear");
+        clear.addEventListener("click", function() {
+            context.fillStyle = "black";
+            context.fillRect(0, 0, w, h);
+        });
+
+        var snd = document.getElementById("send");
+        snd.addEventListener("click", function() {
+            var data = canvas.toDataURL();
+            var xhr = new XMLHttpRequest();
+            var arch = document.getElementById("arch");
+            var arch_s = arch.options[arch.selectedIndex].text;
+            xhr.open("POST", "/class?arch=" + arch_s, true);
+            xhr.setRequestHeader("Content-type", "image/png");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == XMLHttpRequest.DONE) {
+                    document.getElementById("result").innerHTML = "This is " + xhr.responseText;
+                }
+            }
+            xhr.send(data);
+        });
+    </script>
+</body>
+</html>
