@@ -1,0 +1,157 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="https://docs.opencv.org/3.4.0/opencv.js"></script>
+    <canvas id="canv" width="640" height="480" style="background-color: #000000;"></canvas><br>
+    <!--<canvas id="canv" width="128" height="64" style="background-color: #000000;"></canvas><br>-->
+    <canvas id="canv2" width="28" height="28" style="background-color: #000000;"></canvas><br>
+    <button id="send">Определить</button><button id="clear">Стереть</button><br><br>
+    <span style="font-size: 25dp" id="result"></span><br><br>
+  </head>
+  <body>
+    <script>
+      var model;
+      (async () => {
+        model = await tf.loadLayersModel('http://127.0.0.1:8000/model/model.json');
+      })();
+      console.log(model);
+
+
+      var canvas = document.getElementById("canv");
+        var context = canvas.getContext("2d");
+
+        var w = canvas.width;
+        var h = canvas.height;
+        context.fillStyle = "black";
+        context.fillRect(0, 0, w, h);
+
+        var mouse = {x: 0, y: 0};
+        var draw = false;
+
+        canvas.addEventListener("mousedown", function(e) {
+            mouse.x = e.pageX - this.offsetLeft;
+            mouse.y = e.pageY - this.offsetTop;
+            draw = true;
+        });
+        canvas.addEventListener("mousemove", function(e) {
+            if (draw == true) {
+                mouse.x = e.pageX - this.offsetLeft;
+                mouse.y = e.pageY - this.offsetTop;
+
+                context.fillStyle = "white";
+                context.beginPath();
+                context.ellipse(mouse.x, mouse.y, 6, 6, 0, 0, 2 * Math.PI);
+                context.fill();
+            }
+        });
+        canvas.addEventListener("mouseup", function(e) {
+            mouse.x = e.pageX - this.offsetLeft;
+            mouse.y = e.pageY - this.offsetTop;
+            draw = false;
+        });
+        var clear = document.getElementById("clear");
+        clear.addEventListener("click", function() {
+            context.fillStyle = "black";
+            context.fillRect(0, 0, w, h);
+        });
+
+        function crop_and_center_image(img) {
+          let w = img.cols;
+          let h = img.rows;
+          var nw, nh;
+          var sz = 64;
+
+          if (w > h) {
+            nh = sz / w * h;
+            nw = sz;
+            console.log(nw, nh);
+          } else {
+            nw = sz / h * w;
+            nh = sz;
+          }
+          cv.resize(img, img, new cv.Size(nw, nh), 0, 0, cv.INTER_AREA);
+          var iy = (sz - nh) / 2;
+          var ix = (sz - nw) / 2;
+          console.log(ix, iy);
+          var nimg = new cv.Mat(sz, sz, cv.CV_8U, new cv.Scalar(0));
+          //cv.imshow('canv3', nimg);
+
+          nimg.setTo(new cv.Scalar(0, 0, 0));
+          for (var y = iy; y < iy + nh; y++) {
+            for (var x = ix; x < ix + nw; x++) {
+              if (img.ucharPtr(y - iy, x - ix)[0] != 0) {
+                nimg.ucharPtr(y, x)[0] = img.ucharPtr(y - iy, x - ix)[0];
+                nimg.ucharPtr(y, x)[1] = img.ucharPtr(y - iy, x - ix)[1];
+                nimg.ucharPtr(y, x)[2] = img.ucharPtr(y - iy, x - ix)[2];
+              }
+            }
+          }
+          //let mask = new cv.Mat(224, 224, cv.CV_8U, new cv.Scalar(0));
+
+          return nimg;
+        }
+
+
+        function find_contours(im) {
+
+          let blackboard_gray = new cv.Mat();
+          cv.cvtColor(im, blackboard_gray, cv.COLOR_BGR2GRAY);
+          let blur1 = new cv.Mat();
+          cv.medianBlur(blackboard_gray, blur1, 15);
+          let thresh1 = new cv.Mat();
+          cv.threshold(blur1, thresh1, 127, 255, cv.THRESH_BINARY);
+
+
+          let contours = new cv.MatVector();
+          let hierarchy = new cv.Mat();
+          // You can try more different parameters
+          cv.findContours(thresh1, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_NONE);
+          for (let i = 0; i < contours.size(); ++i) {
+            console.log(cv.contourArea(contours.get(i)));
+            if (cv.contourArea(contours.get(i)) > 2000) {
+              let rect = cv.boundingRect(contours.get(i));
+              let imm = new cv.Mat();
+              imm = blackboard_gray.roi(rect);
+              return imm
+            }
+          }
+        }
+
+        var snd = document.getElementById("send");
+        snd.addEventListener("click", function() {
+            let src = cv.imread('canv');
+            let dst = new cv.Mat();
+            let imm = new cv.Mat();
+            imm = find_contours(src);
+            //crop_and_center_image(src)
+            //cv.imshow('canv3', crop_and_center_image(src));
+            cv.resize(crop_and_center_image(imm), dst, new cv.Size(28, 28), 0, 0, cv.INTER_AREA);
+            cv.imshow('canv2', dst);
+            var arr = [];
+
+            var canv2 = document.getElementById("canv2");
+            var ctx = canv2.getContext("2d");
+
+            for (var i = 0; i < 28; i++) {
+              var la = [];
+              for (var j = 0; j < 28; j++) {
+                var d = ctx.getImageData(j, i, 1, 1).data[0];
+                if (d > 0)
+                  la.push(1);
+                else {
+                  la.push(0);
+                }
+              }
+              arr.push(la);
+            }
+            console.log(model);
+            var classes = ['book', 'sun', 'banana', 'apple', 'bowtie', 'ice cream', 'eye', 'square', 'cup', 'door', 'sword', 'star', 'fish', 'donut', 'mountain'];
+            let mx = tf.argMax(model.predict(tf.tensor2d(arr).reshape([-1, 28, 28, 1])), 1);
+            var res = classes[Array.from(mx.dataSync())[0]];
+            document.getElementById("result").innerHTML = "This is " + res;
+        });
+    </script>
+  </body>
+
+</html>
