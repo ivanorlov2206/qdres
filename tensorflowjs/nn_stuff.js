@@ -55,7 +55,7 @@ function crop_and_center_image(canv) {
   let w = canv.width;
   let h = canv.height;
   var nw, nh;
-  var sz = 28;
+  var sz = 64;
 
   if (w > h) {
     nh = sz / w * h;
@@ -90,12 +90,12 @@ function crop_and_center_image(canv) {
   return new_image;
 }
 
-function image_to_array(canv) {
+function image_to_array(canv, sz) {
   var ctx = canv.getContext('2d');
   var arr = [];
-  for (var i = 0; i < 28; i++) {
+  for (var i = 0; i < sz; i++) {
     var la = [];
-    for (var j = 0; j < 28; j++) {
+    for (var j = 0; j < sz; j++) {
       var d = ctx.getImageData(j, i, 1, 1).data[0];
       if (d > 0)
         la.push(255);
@@ -115,7 +115,7 @@ function process_image(canv) {
   var left = contours[0], top = contours[1], w = contours[2] - contours[0], h = contours[3] - contours[1];
   cropped.getContext('2d').drawImage(canv, left, top, w + left, h + top, 0, 0, w + left, h + top);
   var centered = crop_and_center_image(cropped);
-  return image_to_array(centered);
+  return image_to_array(centered, 64);
 }
 
 function clear_canvases() {
