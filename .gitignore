@@ -1,2 +1,6 @@
 features
 labels
+stress/*
+stress_images/*
+*.pyc
+.ipynb_checkpoints
