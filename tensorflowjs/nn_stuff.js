@@ -1,6 +1,7 @@
 var canvases = [];
 const NAME_LEN = 15;
 
+var models = {};
 
 function make_random_name() {
   var s = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
@@ -51,11 +52,10 @@ function find_contours(canv) {
   return [mnx, mny, mxx, mxy];
 }
 
-function crop_and_center_image(canv) {
+function crop_and_center_image(canv, sz) {
   let w = canv.width;
   let h = canv.height;
   var nw, nh;
-  var sz = 64;
 
   if (w > h) {
     nh = sz / w * h;
@@ -90,6 +90,25 @@ function crop_and_center_image(canv) {
   return new_image;
 }
 
+async function predict(canv, model_name) {
+  var model;
+  if (!models[model_name]) {
+    model = await tf.loadLayersModel('http://127.0.0.1:8000/models/' + model_name + '/model.json');
+    models[model_name] = model;
+  } else {
+    model = models[model_name];
+  }
+
+  var arr = process_image(canv, 28);
+  let tf_arr = tf.tensor2d(arr);
+  tf_arr = tf_arr.reshape([-1, 28, 28, 1]);
+
+  let mx = model.predict(tf_arr);
+  var res = Array.from(mx.dataSync())[0];
+
+  return res;
+}
+
 function image_to_array(canv, sz) {
   var ctx = canv.getContext('2d');
   var arr = [];
@@ -109,13 +128,13 @@ function image_to_array(canv, sz) {
 }
 
 
-function process_image(canv) {
+function process_image(canv, size) {
   let contours = find_contours(canv);
   var cropped = create_canv(contours[2] - contours[0], contours[3] - contours[1]);
   var left = contours[0], top = contours[1], w = contours[2] - contours[0], h = contours[3] - contours[1];
   cropped.getContext('2d').drawImage(canv, left, top, w + left, h + top, 0, 0, w + left, h + top);
-  var centered = crop_and_center_image(cropped);
-  return image_to_array(centered, 64);
+  var centered = crop_and_center_image(cropped, size);
+  return image_to_array(centered, size);
 }
 
 function clear_canvases() {

@@ -1,16 +1,20 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="nn_stuff.js"></script>
 
     <canvas id="canv" width="224" height="224" style="background-color: #000000;"></canvas><br>
-    <script src="nn_stuff.js"></script>
     <!--<canvas id="canv" width="128" height="64" style="background-color: #000000;"></canvas><br>-->
     <button id="send">Определить</button><button id="clear">Стереть</button><br><br>
-    <span style="font-size: 25dp" id="result"></span><br>
+    <span style="font-size: 25dp" id="result">Загрузка модели...</span><br>
     <span style="font-size: 25dp" id="time"></span><br><br>
   </head>
   <body style="touch-action: none;">
     <script>
+      (async () => {
+
+        document.getElementById("result").innerHTML = "";
 
 
         var canvas = document.getElementById("canv");
@@ -50,13 +54,14 @@
               context.fillStyle = "black";
               context.fillRect(0, 0, w, h);
           });
-
           var snd = document.getElementById("send");
           snd.addEventListener("click", function() {
-            console.time("process");
-            var arr = process_image(canvas);
-            console.timeEnd("process");
+            (async () => {
+              var res = await predict(canvas, 'apple');
+              document.getElementById("result").innerHTML = "Prob: " + res;
+            })();
           });
+      })();
 
 
     </script>
