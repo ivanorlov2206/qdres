@@ -4,7 +4,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
     <script src="nn_stuff.js"></script>
 
-    <canvas id="canv" width="224" height="224" style="background-color: #000000;"></canvas><br>
+    <div id="test_div"></div>
     <!--<canvas id="canv" width="128" height="64" style="background-color: #000000;"></canvas><br>-->
     <button id="send">Определить</button><button id="clear">Стереть</button><br><br>
     <span style="font-size: 25dp" id="result">Загрузка модели...</span><br>
@@ -16,48 +16,15 @@
 
         document.getElementById("result").innerHTML = "";
 
+        var predictor = createPredictor(document.getElementById("test_div"));
 
-        var canvas = document.getElementById("canv");
-          var context = canvas.getContext("2d");
-
-          var w = canvas.width;
-          var h = canvas.height;
-          context.fillStyle = "black";
-          context.fillRect(0, 0, w, h);
-
-          var mouse = {x: 0, y: 0};
-          var draw = false;
-
-          canvas.addEventListener("pointerdown", function(e) {
-              mouse.x = e.pageX - this.offsetLeft;
-              mouse.y = e.pageY - this.offsetTop;
-              draw = true;
-          });
-          canvas.addEventListener("pointermove", function(e) {
-              if (draw == true) {
-                  mouse.x = e.pageX - this.offsetLeft;
-                  mouse.y = e.pageY - this.offsetTop;
-
-                  context.fillStyle = "white";
-                  context.beginPath();
-                  context.ellipse(mouse.x, mouse.y, 6, 6, 0, 0, 2 * Math.PI);
-                  context.fill();
-              }
-          });
-          canvas.addEventListener("pointerup", function(e) {
-              mouse.x = e.pageX - this.offsetLeft;
-              mouse.y = e.pageY - this.offsetTop;
-              draw = false;
-          });
-          var clear = document.getElementById("clear");
           clear.addEventListener("click", function() {
-              context.fillStyle = "black";
-              context.fillRect(0, 0, w, h);
+              predictor.clear_canvas();
           });
           var snd = document.getElementById("send");
           snd.addEventListener("click", function() {
             (async () => {
-              var res = await predict(canvas, 'apple');
+              var res = await predictor.predict('spider');
               document.getElementById("result").innerHTML = "Prob: " + res;
             })();
           });

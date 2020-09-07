@@ -104,6 +104,7 @@ async function predict(canv, model_name) {
   tf_arr = tf_arr.reshape([-1, 28, 28, 1]);
 
   let mx = model.predict(tf_arr);
+  console.log(mx)
   var res = Array.from(mx.dataSync())[0];
 
   return res;
@@ -142,4 +143,59 @@ function clear_canvases() {
     document.body.removeChild(canvases[i]);
   }
   canvases = [];
+}
+
+
+function createPredictor(div) {
+  let canvas = document.createElement("canvas");
+  canvas.width = 224;
+  canvas.height = 224;
+  canvas.id = make_random_name();
+
+  var context = canvas.getContext("2d");
+
+  var w = canvas.width;
+  var h = canvas.height;
+  context.fillStyle = "black";
+  context.fillRect(0, 0, w, h);
+
+  var mouse = {x: 0, y: 0};
+  var draw = false;
+
+  canvas.addEventListener("pointerdown", function(e) {
+      mouse.x = e.pageX - this.offsetLeft;
+      mouse.y = e.pageY - this.offsetTop;
+      draw = true;
+  });
+  canvas.addEventListener("pointermove", function(e) {
+      if (draw == true) {
+          mouse.x = e.pageX - this.offsetLeft;
+          mouse.y = e.pageY - this.offsetTop;
+
+          context.fillStyle = "white";
+          context.beginPath();
+          context.ellipse(mouse.x, mouse.y, 6, 6, 0, 0, 2 * Math.PI);
+          context.fill();
+      }
+  });
+  canvas.addEventListener("pointerup", function(e) {
+      mouse.x = e.pageX - this.offsetLeft;
+      mouse.y = e.pageY - this.offsetTop;
+      draw = false;
+  });
+
+  canvases.push(canvas);
+  div.appendChild(canvas);
+  var obj = {};
+  obj.main_canv = canvas;
+  obj.canvases = [];
+  obj.clear_canvas = function() {
+    var ctx = this.main_canv.getContext('2d');
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, w, h);
+  }
+  obj.predict = function(model_name) {
+    return predict(this.main_canv, model_name);
+  };
+  return obj;
 }
