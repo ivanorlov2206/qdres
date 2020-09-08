@@ -90,10 +90,10 @@ function crop_and_center_image(canv, sz) {
   return new_image;
 }
 
-async function predict(canv, model_name) {
+async function predict(canv, model_name, models_addr) {
   var model;
   if (!models[model_name]) {
-    model = await tf.loadLayersModel('http://127.0.0.1:8000/models/' + model_name + '/model.json');
+    model = await tf.loadLayersModel(models_addr + '/' + model_name + '/model.json');
     models[model_name] = model;
   } else {
     model = models[model_name];
@@ -146,10 +146,10 @@ function clear_canvases() {
 }
 
 
-function createPredictor(div) {
+function createPredictor(div, width, height) {
   let canvas = document.createElement("canvas");
-  canvas.width = 224;
-  canvas.height = 224;
+  canvas.width = width;
+  canvas.height = height;
   canvas.id = make_random_name();
 
   var context = canvas.getContext("2d");
@@ -194,8 +194,8 @@ function createPredictor(div) {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, w, h);
   }
-  obj.predict = function(model_name) {
-    return predict(this.main_canv, model_name);
+  obj.predict = function(model_name, models_addr) {
+    return predict(this.main_canv, model_name, models_addr);
   };
   return obj;
 }

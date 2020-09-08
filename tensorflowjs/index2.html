@@ -16,7 +16,7 @@
 
         document.getElementById("result").innerHTML = "";
 
-        var predictor = createPredictor(document.getElementById("test_div"));
+        var predictor = createPredictor(document.getElementById("test_div"), 224, 224);
 
           clear.addEventListener("click", function() {
               predictor.clear_canvas();
@@ -24,7 +24,7 @@
           var snd = document.getElementById("send");
           snd.addEventListener("click", function() {
             (async () => {
-              var res = await predictor.predict('spider');
+              var res = await predictor.predict('spider', 'http://localhost:8000/models/');
               document.getElementById("result").innerHTML = "Prob: " + res;
             })();
           });
